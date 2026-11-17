@@ -1,4 +1,4 @@
-<!-- 基于 GitHub 开源项目 NicoleZ-code/TheSwordArray（青竹蜂云剑阵，MIT License）改编：飞剑数量改定原著七十二口。原作者版权与许可声明见仓库 LICENSE。 -->
+<!-- 基于 GitHub 开源项目 NicoleZ-code/TheSwordArray（青竹蜂云剑阵，MIT License）改编：飞剑数量改定原著七十二口；剑形按 Edward 提供的样图做了细节升级（竹节剑身/金边/剑格/缠柄/剑首，受光金属材质）。原作者版权与许可声明见仓库 LICENSE。 -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -365,36 +365,123 @@
           window.swordPositions = positions.current;
         }
 
-        // 剑形几何体
+        // 剑形几何体（细节版，照 Edward 提供的样图建模：竹节剑身、金色刃边、剑格金线、斜缠剑柄、喇叭剑首；顶点色分件）
         const geometry = useMemo(() => {
-          const bladeGeo = new THREE.ConeGeometry(0.12, 2.5, 4);
-          bladeGeo.scale(0.4, 1, 1);
-          bladeGeo.rotateX(Math.PI / 2);
-          bladeGeo.translate(0, 0, 1.0);
+          const paint = (geo, hex) => {
+            const c = new THREE.Color(hex);
+            const n = geo.attributes.position.count;
+            const arr = new Float32Array(n * 3);
+            for (let i = 0; i < n; i++) {
+              arr[i * 3] = c.r;
+              arr[i * 3 + 1] = c.g;
+              arr[i * 3 + 2] = c.b;
+            }
+            geo.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+            return geo;
+          };
+          const parts = [];
+          const add = (geo, hex) => {
+            parts.push(paint(geo.toNonIndexed(), hex));
+          };
 
-          const guardGeo = new THREE.BoxGeometry(0.5, 0.08, 0.15);
-          guardGeo.translate(0, 0, -0.2);
+          // 剑身：竹叶形轮廓挤出，斜面出刃
+          const bladeShape = new THREE.Shape();
+          bladeShape.moveTo(0, -0.088);
+          bladeShape.lineTo(1.92, -0.07);
+          bladeShape.quadraticCurveTo(2.18, -0.045, 2.38, 0);
+          bladeShape.quadraticCurveTo(2.18, 0.045, 1.92, 0.07);
+          bladeShape.lineTo(0, 0.088);
+          bladeShape.lineTo(0, -0.088);
+          const bladeGeo = new THREE.ExtrudeGeometry(bladeShape, {
+            depth: 0.034,
+            bevelEnabled: true,
+            bevelThickness: 0.02,
+            bevelSize: 0.018,
+            bevelSegments: 2,
+            steps: 1,
+          });
+          bladeGeo.translate(0, 0, -0.017);
+          bladeGeo.rotateY(-Math.PI / 2);
+          bladeGeo.translate(0, 0, 0.02);
+          add(bladeGeo, 0x0ca678);
 
-          const handleGeo = new THREE.CylinderGeometry(0.05, 0.06, 0.7, 6);
+          // 竹节环（4 道，微凸于剑身）
+          [0.52, 0.97, 1.42, 1.87].forEach((z) => {
+            const nodeGeo = new THREE.BoxGeometry(0.088, 0.212, 0.055);
+            nodeGeo.translate(0, 0, z);
+            add(nodeGeo, 0x07875a);
+          });
+
+          // 中央槽线（双面深色细条，读作凹槽）
+          [0.019, -0.019].forEach((x) => {
+            const grooveGeo = new THREE.BoxGeometry(0.004, 0.052, 1.66);
+            grooveGeo.translate(x, 0, 1.04);
+            add(grooveGeo, 0x065f46);
+          });
+
+          // 金色刃边（直刃段两条细轨）
+          [0.095, -0.095].forEach((y) => {
+            const railGeo = new THREE.BoxGeometry(0.03, 0.014, 1.55);
+            railGeo.translate(0, y, 0.925);
+            add(railGeo, 0xd9a441);
+          });
+
+          // 剑格（青绿主体＋双面金线）
+          const guardGeo = new THREE.BoxGeometry(0.085, 0.5, 0.07);
+          guardGeo.translate(0, 0, -0.06);
+          add(guardGeo, 0x0b8a5f);
+          [-0.099, -0.021].forEach((z) => {
+            const trimGeo = new THREE.BoxGeometry(0.092, 0.52, 0.014);
+            trimGeo.translate(0, 0, z);
+            add(trimGeo, 0xd9a441);
+          });
+
+          // 金色领口（剑格与剑身之间）
+          const collarGeo = new THREE.CylinderGeometry(0.078, 0.078, 0.1, 16);
+          collarGeo.rotateX(Math.PI / 2);
+          collarGeo.translate(0, 0, -0.005);
+          add(collarGeo, 0xd9a441);
+
+          // 剑柄（深青）＋斜缠环（亮青，仿竹叶斜纹）
+          const handleGeo = new THREE.CylinderGeometry(0.052, 0.058, 0.62, 12);
           handleGeo.rotateX(Math.PI / 2);
-          handleGeo.translate(0, 0, -0.6);
+          handleGeo.translate(0, 0, -0.44);
+          add(handleGeo, 0x065f46);
+          [-0.22, -0.34, -0.46, -0.58].forEach((z) => {
+            const ringGeo = new THREE.TorusGeometry(0.058, 0.009, 8, 20);
+            ringGeo.rotateX(0.45);
+            ringGeo.translate(0, 0, z);
+            add(ringGeo, 0x2fbf71);
+          });
 
-          const merged = mergeGeometries([bladeGeo, guardGeo, handleGeo]);
-          return merged || bladeGeo;
+          // 剑首（向后张口的喇叭形＋金色收尾）
+          const pommelGeo = new THREE.CylinderGeometry(0.068, 0.088, 0.09, 16);
+          pommelGeo.rotateX(Math.PI / 2);
+          pommelGeo.translate(0, 0, -0.79);
+          add(pommelGeo, 0x0b8a5f);
+          const capGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.02, 16);
+          capGeo.rotateX(Math.PI / 2);
+          capGeo.translate(0, 0, -0.845);
+          add(capGeo, 0xd9a441);
+
+          const merged = mergeGeometries(parts);
+          return merged || parts[0];
         }, []);
 
         const material = useMemo(
           () =>
-            new THREE.MeshBasicMaterial({
-              color: 0x00ff88,
-              transparent: true,
-              opacity: 0.9,
+            new THREE.MeshStandardMaterial({
+              vertexColors: true,
+              metalness: 0.65,
+              roughness: 0.35,
+              emissive: 0x0a3d24,
+              emissiveIntensity: 0.4,
             }),
           []
         );
 
         const auraGeometry = useMemo(() => {
-          const auraGeo = new THREE.ConeGeometry(0.15, 2.6, 4);
+          const auraGeo = new THREE.ConeGeometry(0.13, 2.6, 4);
           auraGeo.scale(0.5, 1, 1);
           auraGeo.rotateX(Math.PI / 2);
           auraGeo.translate(0, 0, 1.0);
@@ -406,7 +493,7 @@
             new THREE.MeshBasicMaterial({
               color: 0xffdd44,
               transparent: true,
-              opacity: 0.6,
+              opacity: 0.35,
               blending: THREE.AdditiveBlending,
             }),
           []
@@ -1229,6 +1316,16 @@
             <SpiritParticles />
 
             <ambientLight intensity={0.1} color="#4488ff" />
+            <directionalLight
+              position={[5, 8, 6]}
+              intensity={1.6}
+              color="#c8ffe9"
+            />
+            <pointLight
+              position={[-6, -4, -6]}
+              intensity={60}
+              color="#ffd977"
+            />
 
             <CameraController />
             <SwordSwarm />
