@@ -1,40 +1,40 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hand Gesture Kit · Demo</title>
-    <meta name="description" content="Webcam hand gestures in the browser: live poses, motions and two-hand gestures." />
+    <title>手势识别 · 演示</title>
+    <meta name="description" content="浏览器里用摄像头玩手势：实时姿势、动作和双手手势。" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%8B%3C/text%3E%3C/svg%3E" />
-    <script type="module" crossorigin src="./assets/demo-ijPvA1Zo.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/kit-Bc61Gg3j.js">
+    <script type="module" crossorigin src="./assets/demo-BgJBWVDD.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/kit-CW37YRRp.js">
     <link rel="modulepreload" crossorigin href="./assets/draw-C1LGWSmp.js">
     <link rel="stylesheet" crossorigin href="./assets/demo-CPGJFEQM.css">
   </head>
   <body>
     <header>
-      <b>👋 hand-gesture-kit</b>
-      <nav><a href="./index.html" class="on">Demo</a><a href="./lab.html">Gesture Lab</a><a href="./pop.html">Example game</a></nav>
-      <span id="status">camera off</span>
+      <b>👋 手势识别演示</b>
+      <nav><a href="./index.html" class="on">演示</a><a href="./lab.html">手势实验室</a><a href="./pop.html">气球游戏</a></nav>
+      <span id="status">摄像头未开启</span>
     </header>
     <main>
       <div class="stage">
         <video id="cam" playsinline muted></video>
         <canvas id="overlay"></canvas>
         <div id="start" class="start">
-          <h1>Show your hands</h1>
-          <p>Every pose, motion and two-hand gesture the engine knows, live. Video stays on your device.</p>
+          <h1>秀出你的双手</h1>
+          <p>引擎认识的每个姿势、动作和双手手势，实时识别。视频只留在你的设备上，不上传。</p>
           <div class="row">
-            <button id="b-cam">Start camera</button>
-            <button id="b-synth" class="ghost">No camera? Watch synthetic hands</button>
+            <button id="b-cam">开启摄像头</button>
+            <button id="b-synth" class="ghost">没有摄像头？看虚拟手演示</button>
           </div>
           <p id="err" class="err"></p>
         </div>
       </div>
       <aside>
-        <h2>Hands</h2>
-        <div id="hands" class="hands"><p class="dim">No hands yet</p></div>
-        <h2>Events</h2>
+        <h2>双手</h2>
+        <div id="hands" class="hands"><p class="dim">还没有检测到手</p></div>
+        <h2>事件记录</h2>
         <ol id="log" class="log"></ol>
       </aside>
     </main>
