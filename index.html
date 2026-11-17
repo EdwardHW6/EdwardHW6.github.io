@@ -114,9 +114,9 @@
       const CONFIG = {
         swordCount: 72, // 青竹蜂云剑正数七十二口（原作桌面500/手机300，本地化改定72）
         pathHistoryLength: 300,
-        maxSpeed: 25,
-        sprintSpeed: 50,
-        steerForce: 28,
+        maxSpeed: 34,
+        sprintSpeed: 70,
+        steerForce: 62,
         separationDist: 3,
         separationForce: 10,
         noiseScale: 0.3, // 噪声缩放
@@ -352,7 +352,7 @@
         ctx: null,
         master: null,
         noiseBuf: null,
-        enabled: true,
+        enabled: false,
         lastWhoosh: 0,
         lastShing: 0,
         unlock() {
@@ -363,7 +363,7 @@
               if (!AC) return;
               this.ctx = new AC();
               this.master = this.ctx.createGain();
-              this.master.gain.value = 0.55;
+              this.master.gain.value = 0.38;
               this.master.connect(this.ctx.destination);
               const len = Math.floor(this.ctx.sampleRate * 1.5);
               this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -800,7 +800,7 @@
           trailData.geometry.attributes.color.needsUpdate = true;
         };
 
-        useFrame(({ clock, camera }) => {
+        useFrame(({ clock, camera, delta: rawDelta }) => {
           if (!meshRef.current) return;
 
           const targetPosition = useHandStore.getState().targetPosition;
@@ -810,7 +810,7 @@
           const extendPath = useHandStore.getState().extendPath;
 
           const time = clock.getElapsedTime();
-          const delta = 1 / 60;
+          const delta = Math.min(rawDelta || 1 / 60, 1 / 30);
 
           // 无手势时自动盘旋：使用默认的 LOTUS 模式
           let currentTarget = targetPosition;
@@ -1003,8 +1003,8 @@
             if (d > 0) {
               desired.normalize();
               // 靠近目标时减速（到达行为）
-              if (d < 10) {
-                desired.multiplyScalar(speed * (d / 10));
+              if (d < 6) {
+                desired.multiplyScalar(speed * (0.35 + 0.65 * (d / 6)));
               } else {
                 desired.multiplyScalar(speed);
               }
