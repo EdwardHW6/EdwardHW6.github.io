@@ -1791,6 +1791,7 @@
         const pendingGesture = useRef(null);
         const gestureStartTime = useRef(0);
         const currentConfirmedGesture = useRef('LOTUS');
+        const smoothedDepth = useRef(0);
 
         useFrame(({ clock }) => {
           if (!globalLandmarker || !globalVideo || globalVideo.readyState !== 4)
@@ -1843,9 +1844,19 @@
             const ndcX = (1 - targetPoint.x) * 2 - 1;
             const ndcY = -(targetPoint.y * 2 - 1);
 
+            // v4.1 手距深度：掌宽（食指根 lm[5] 与小指根 lm[17] 的画面间距）越大，手离镜头越近。
+            // 把目标平面从 z=0 推近/拉远，剑阵随之飞近/飞远；非对称映射 + 平滑防抖。
+            const palmScale = Math.hypot(lm[5].x - lm[17].x, lm[5].y - lm[17].y);
+            let depthTarget;
+            if (palmScale >= 0.15) depthTarget = (palmScale - 0.15) * 78;
+            else depthTarget = (palmScale - 0.15) * 160;
+            depthTarget = Math.max(-15, Math.min(11, depthTarget));
+            smoothedDepth.current += (depthTarget - smoothedDepth.current) * 0.18;
+            const depthZ = smoothedDepth.current;
+
             const vec = new THREE.Vector3(ndcX, ndcY, 0.5).unproject(camera);
             const dir = vec.sub(camera.position).normalize();
-            const dist = -camera.position.z / dir.z;
+            const dist = (depthZ - camera.position.z) / dir.z;
             const worldPos = camera.position
               .clone()
               .add(dir.multiplyScalar(dist));
