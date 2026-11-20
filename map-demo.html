@@ -23,7 +23,7 @@
   <div>右上角切换图层，对比各家卫星与标注的叠加效果。</div>
   <div><span class="dot red"></span>红钉：GCJ-02 原始坐标（高德/腾讯查到的原值）</div>
   <div><span class="dot blue"></span>蓝钉：经 gcoord 校正为 WGS-84 的坐标</div>
-  <div>切到 Google 卫星层，放大看哪根钉扎准了玫瑰园的楼，哪套坐标就对得上。</div>
+  <div>实测结论：红钉扎准了玫瑰园 2 期的楼——本页的 Google 瓦片走中国 GCJ-02 网格，国内坐标原值直接用；蓝钉偏了数百米，那种校正是接全球图源时才需要的，在这里反而是错的。</div>
   <div class="credit">图层聚合：Leaflet.ChineseTmsProviders（MIT）· 坐标转换：gcoord（MIT）· 底图版权归各提供方</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -42,7 +42,6 @@
   var amapSat = L.layerGroup([prov('GaoDe.Satellite.Map'), prov('GaoDe.Satellite.Annotion')]);
   var amapNormal = prov('GaoDe.Normal.Map');
   var tencentSat = prov('Tencent.Satellite.Map');
-  var tdtSat = L.layerGroup([prov('TianDiTu.Satellite.Map'), prov('TianDiTu.Satellite.Annotion')]);
 
   var map = L.map('map', {center: center, zoom: 17, layers: [googleMix]});
 
@@ -59,8 +58,7 @@
     'Google卫星＋高德标注（混搭）': googleMix,
     '高德卫星＋标注（同源）': amapSat,
     '高德平面': amapNormal,
-    '腾讯卫星': tencentSat,
-    '天地图卫星＋标注（官方）': tdtSat
+    '腾讯卫星（纯影像无标注）': tencentSat
   }, null, {collapsed: false}).addTo(map);
 </script>
 </body>
