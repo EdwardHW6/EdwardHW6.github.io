@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>混合地图演示 · 绿城玫瑰园</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  html,body{margin:0;height:100%;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  #map{position:absolute;inset:0;background:#ddd}
+  .panel{position:absolute;left:10px;top:10px;z-index:1000;background:rgba(255,255,255,.95);border-radius:10px;padding:10px 12px;max-width:302px;box-shadow:0 2px 10px rgba(0,0,0,.25);font-size:13px;line-height:1.6;color:#222}
+  .panel h1{font-size:15px;margin:0 0 4px}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+  .red{background:#e33}.blue{background:#2067d6}
+  .credit{color:#888;font-size:11px;margin-top:4px}
+  .leaflet-control-layers{font-size:13px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="panel">
+  <h1>混合地图演示 · 绿城玫瑰园</h1>
+  <div>右上角切换图层，对比各家卫星与标注的叠加效果。</div>
+  <div><span class="dot red"></span>红钉：GCJ-02 原始坐标（高德/腾讯查到的原值）</div>
+  <div><span class="dot blue"></span>蓝钉：经 gcoord 校正为 WGS-84 的坐标</div>
+  <div>切到 Google 卫星层，放大看哪根钉扎准了玫瑰园的楼，哪套坐标就对得上。</div>
+  <div class="credit">图层聚合：Leaflet.ChineseTmsProviders（MIT）· 坐标转换：gcoord（MIT）· 底图版权归各提供方</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/htoooth/Leaflet.ChineseTmsProviders@master/src/leaflet.ChineseTmsProviders.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gcoord@0.3.2/dist/gcoord.min.js"></script>
+<script>
+  // 玫瑰园坐标：GCJ-02（经度, 纬度）
+  var GCJ_LNGLAT = [115.769671, 33.809745];
+  var WGS_LNGLAT = gcoord.transform(GCJ_LNGLAT.slice(), gcoord.GCJ02, gcoord.WGS84);
+  function ll(lnglat){ return [lnglat[1], lnglat[0]]; } // 转 Leaflet 的 [纬度, 经度]
+  var center = [(GCJ_LNGLAT[1] + WGS_LNGLAT[1]) / 2, (GCJ_LNGLAT[0] + WGS_LNGLAT[0]) / 2];
+
+  function prov(name){ return L.tileLayer.chinaProvider(name, {maxZoom: 18}); }
+
+  var googleMix = L.layerGroup([prov('Google.Satellite.Map'), prov('GaoDe.Satellite.Annotion')]);
+  var amapSat = L.layerGroup([prov('GaoDe.Satellite.Map'), prov('GaoDe.Satellite.Annotion')]);
+  var amapNormal = prov('GaoDe.Normal.Map');
+  var tencentSat = prov('Tencent.Satellite.Map');
+  var tdtSat = L.layerGroup([prov('TianDiTu.Satellite.Map'), prov('TianDiTu.Satellite.Annotion')]);
+
+  var map = L.map('map', {center: center, zoom: 17, layers: [googleMix]});
+
+  function pin(lnglat, color, text){
+    var m = L.circleMarker(ll(lnglat), {radius: 9, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1});
+    m.bindTooltip(text, {permanent: true, direction: 'top', offset: [0, -10]});
+    m.addTo(map);
+    return m;
+  }
+  pin(GCJ_LNGLAT, '#e33', 'GCJ-02 原值');
+  pin(WGS_LNGLAT, '#2067d6', 'WGS-84 校正');
+
+  L.control.layers({
+    'Google卫星＋高德标注（混搭）': googleMix,
+    '高德卫星＋标注（同源）': amapSat,
+    '高德平面': amapNormal,
+    '腾讯卫星': tencentSat,
+    '天地图卫星＋标注（官方）': tdtSat
+  }, null, {collapsed: false}).addTo(map);
+</script>
+</body>
+</html>
