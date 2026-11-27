@@ -162,6 +162,11 @@ async function start() {
       dom.add.setAttribute('aria-pressed', inTickets);
     }
     map.setCurrent(seat);
+    if (seat) {
+      finderRow.value = seat.row + 1;
+      fillFinderSeats(seat.row);
+      finderSeat.value = seat.number;
+    }
     updateKeys();
   }
 
@@ -279,6 +284,45 @@ async function start() {
       seats.setHovered(seat && !isTaken(seat) && seat !== rig.seat ? seat.index : null);
     },
     onPick: (seat) => go(seat),
+  });
+
+  // ---- Seat finder: jump straight to a row/seat instead of counting ----
+
+  const finderRow = $('#finder-row');
+  const finderSeat = $('#finder-seat');
+  const fillFinderSeats = (row) => {
+    finderSeat.replaceChildren(
+      ...Array.from({ length: ROW_COUNTS[row] }, (_, k) => {
+        const option = document.createElement('option');
+        option.value = k + 1;
+        option.textContent = k + 1;
+        return option;
+      })
+    );
+  };
+  finderRow.replaceChildren(
+    ...Array.from({ length: ROWS }, (_, r) => {
+      const option = document.createElement('option');
+      option.value = r + 1;
+      option.textContent = r + 1;
+      return option;
+    })
+  );
+  finderRow.value = 8;
+  fillFinderSeats(7);
+  finderSeat.value = 15;
+  finderRow.addEventListener('change', () => fillFinderSeats(+finderRow.value - 1));
+  $('#finder-go').addEventListener('click', () => {
+    const seat = seatAt(+finderRow.value - 1, +finderSeat.value);
+    if (isTaken(seat)) {
+      // Sold seats can't be sat in, but their view still helps judge the row.
+      preview.show(seat);
+      dom.previewCaption.textContent = `${seatName(seat)} · 已售（示意） · ${metricsText(seat)}`;
+      dom.panel.classList.add('is-previewing');
+      toast(`${seatName(seat)} 示意已售，看看它的视角参考一下`);
+      return;
+    }
+    go(seat);
   });
 
   // ---- Pointer: drag to look, click or tap a seat ----

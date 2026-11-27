@@ -92,6 +92,17 @@ export class SeatMap {
       return node;
     });
 
+    // Seat numbers, printed on the seats so nobody has to count.
+    for (const seat of SEATS) {
+      const num = el('text', {
+        x: px(seat.position.x).toFixed(2),
+        y: py(seat.position.z).toFixed(2),
+        class: `map__num${isTaken(seat) ? ' is-taken' : ''}`,
+      });
+      num.textContent = seat.number;
+      svg.append(num);
+    }
+
     container.append(svg);
 
     const seatOf = (event) => {
