@@ -407,7 +407,7 @@
         let caneTexture;
         let snowSystem, snowMat;
         const MATS = {};            // 主题可换色的材质登记表
-        let starMesh, starHalo;
+        let starMesh, starHalo, starSparkle;
         let garland, garlandT;      // 灯串光点层
         let dustMesh; const dustData = [];
         let glowPoolMat; const giftMats = [];
@@ -790,19 +790,47 @@
             const points = 5;
             for (let i = 0; i < points * 2; i++) {
                 const angle = (i * Math.PI) / points + Math.PI / 2;
-                const r = (i % 2 === 0) ? 1.5 : 0.7;
+                const r = (i % 2 === 0) ? 1.6 : 0.62;
                 const x = Math.cos(angle) * r; const y = Math.sin(angle) * r;
                 if (i === 0) starShape.moveTo(x, y); else starShape.lineTo(x, y);
             }
             starShape.closePath();
-            const starGeo = new THREE.ExtrudeGeometry(starShape, { depth: 0.4, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1, bevelSegments: 2 });
-            starGeo.center(); 
-            const starMat = new THREE.MeshStandardMaterial({ color: 0xffdd88, emissive: 0xffaa00, emissiveIntensity: 1.0, metalness: 1.0, roughness: 0 });
+            const starGeo = new THREE.ExtrudeGeometry(starShape, { depth: 0.3, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.1, bevelSegments: 3 });
+            starGeo.center();
+            const starMat = new THREE.MeshPhysicalMaterial({ color: 0xffdd88, emissive: 0xffaa00, emissiveIntensity: 1.15, metalness: 1.0, roughness: 0.08, clearcoat: 1.0, clearcoatRoughness: 0.08, envMapIntensity: 2.5 });
             MATS.star = starMat;
+            // 树顶星组：修长星体 + 中心宝石 + 金色底座 + 十字星芒
+            const starGroup = new THREE.Group();
+            const starPos = new THREE.Vector3(0, CONFIG.particles.treeHeight/2 + 1.2, 0);
+            starGroup.position.copy(starPos);
             const star = new THREE.Mesh(starGeo, starMat);
-            star.position.set(0, CONFIG.particles.treeHeight/2 + 1.2, 0);
-            starMesh = star;
-            mainGroup.add(star);
+            starGroup.add(star);
+            const gemMat = new THREE.MeshPhysicalMaterial({ color: 0xcc1133, metalness: 0.2, roughness: 0.05, clearcoat: 1.0, emissive: 0x550011, emissiveIntensity: 0.7, envMapIntensity: 2.0 });
+            MATS.gem = gemMat;
+            const gem = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 0), gemMat);
+            starGroup.add(gem);
+            const mount = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.2, 1.15, 10), goldMat);
+            mount.position.y = -1.95;
+            starGroup.add(mount);
+            const sparkCanvas = document.createElement('canvas');
+            sparkCanvas.width = 256; sparkCanvas.height = 256;
+            const sctx = sparkCanvas.getContext('2d');
+            const drawRay = (w, l, rot) => {
+                sctx.save(); sctx.translate(128, 128); sctx.rotate(rot);
+                const lg = sctx.createLinearGradient(-l, 0, l, 0);
+                lg.addColorStop(0, 'rgba(255,230,160,0)');
+                lg.addColorStop(0.5, 'rgba(255,240,200,0.95)');
+                lg.addColorStop(1, 'rgba(255,230,160,0)');
+                sctx.fillStyle = lg;
+                sctx.beginPath(); sctx.ellipse(0, 0, l, w, 0, 0, Math.PI * 2); sctx.fill();
+                sctx.restore();
+            };
+            drawRay(5, 126, 0); drawRay(5, 126, Math.PI / 2); drawRay(2.5, 70, Math.PI / 4); drawRay(2.5, 70, -Math.PI / 4);
+            starSparkle = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(sparkCanvas), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.7 }));
+            starSparkle.scale.set(6, 6, 1);
+            starGroup.add(starSparkle);
+            starMesh = starGroup;
+            mainGroup.add(starGroup);
             // 树顶星的光晕
             const haloCanvas = document.createElement('canvas');
             haloCanvas.width = 256; haloCanvas.height = 256;
@@ -814,7 +842,7 @@
             hctx.fillStyle = hgrad; hctx.fillRect(0, 0, 256, 256);
             starHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(haloCanvas), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.85 }));
             starHalo.scale.set(8, 8, 1);
-            starHalo.position.copy(star.position);
+            starHalo.position.copy(starPos);
             mainGroup.add(starHalo);
             // 树干与金色底座
             const trunk = new THREE.Mesh(
@@ -1038,6 +1066,7 @@
             if (MATS.green) { MATS.green.color.setHex(t.green); MATS.green.emissive.setHex(t.green).multiplyScalar(0.35); }
             if (MATS.red) { MATS.red.color.setHex(t.red); }
             if (MATS.star) { MATS.star.color.setHex(t.gold); MATS.star.emissive.setHex(t.gold); }
+            if (MATS.gem) { MATS.gem.color.setHex(t.red); MATS.gem.emissive.setHex(t.red).multiplyScalar(0.4); }
             if (scene) { scene.background.setHex(t.bg); scene.fog.color.setHex(t.bg); }
             if (glowPoolMat) glowPoolMat.color.setHex(t.glow);
             giftMats.forEach((m, i) => m.color.setHex(t.gifts[i % t.gifts.length]));
@@ -1261,11 +1290,16 @@
             particleSystem.forEach(p => p.update(dt, STATE.mode, STATE.focusTarget));
             updateDust(dt, STATE.mode);
             updateGarland(clock.elapsedTime);
-            if (starMesh) starMesh.rotation.y += dt * 0.5;
+            if (starMesh) starMesh.rotation.y += dt * 0.35;
             if (starHalo) {
                 const pulse = 1 + 0.07 * Math.sin(clock.elapsedTime * 2.0);
                 starHalo.scale.set(8 * pulse, 8 * pulse, 1);
                 starHalo.material.opacity = 0.72 + 0.16 * Math.sin(clock.elapsedTime * 2.0);
+            }
+            if (starSparkle) {
+                const sp = 1 + 0.12 * Math.sin(clock.elapsedTime * 2.7 + 1.0);
+                starSparkle.scale.set(6 * sp, 6 * sp, 1);
+                starSparkle.material.opacity = 0.5 + 0.28 * Math.sin(clock.elapsedTime * 2.7 + 1.0);
             }
             updateSnow();
             composer.render();
